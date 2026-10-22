@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Build sheet — LyteWork Engraving</title>
+<link rel="icon" href="assets/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/sheet.css">
+<style>
+  .toolbar{ position:fixed; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; gap:10px; padding:10px 16px;
+    background:#233354; border-bottom:2px solid #c9b27a; color:#fff; font-family:var(--body); }
+  .toolbar b{ font-family:var(--display); font-weight:600; font-size:17px; margin-right:auto; }
+  .toolbar a,.toolbar button{ font:600 14px var(--body); border-radius:9px; padding:8px 14px; text-decoration:none; border:1px solid rgba(255,255,255,.3); background:transparent; color:#fff; cursor:pointer; }
+  .toolbar button.go{ background:#c9b27a; color:#1a2740; border-color:#c9b27a; }
+  .sheet-msg{ max-width:520px; margin:60px auto; text-align:center; font-family:var(--body); color:#6b7489; }
+</style>
+</head>
+<body class="sheet-body">
+<div class="toolbar no-print">
+  <b>Build sheet</b>
+  <a href="./">Back to order</a>
+  <button class="go" id="btnPrint">Print or save PDF</button>
+</div>
+<div id="sheet"><p class="sheet-msg">Loading…</p></div>
+<script>
+  // plain script, so Print works even if something else on the page fails
+  document.getElementById('btnPrint').onclick = () => window.print();
+</script>
+<script type="module">
+  import { buildSheetHTML } from './js/buildsheet.js';
+  import { decodeOrder } from './js/codec.js';
+  import { normalizeOrder, applySettings, itemInfo } from './js/engine.js';
+  import { measure } from './js/artfit.js';
+  import { ART } from './js/data/figures.js';
+  const box = document.getElementById('sheet');
+  try {
+    let order, checklistUrl = '';
+    const hash = location.hash.slice(1);
+    if (hash) {
+      order = await decodeOrder(hash.replace(/^d=/, ''));
+      checklistUrl = new URL('checklist.html', location.href).href + '#' + hash.replace(/^d=/, '');
+    } else {
+      const data = JSON.parse(localStorage.getItem('tbs:sheet') || 'null');
+      if (!data) throw new Error('No order to show. Open an order and press Build sheet.');
+      if (data.settings) applySettings(data.settings);
+      order = normalizeOrder(data.order).order;
+      checklistUrl = data.checklistUrl || '';
+    }
+    document.title = `Build sheet${order.orderNo ? ' ' + order.orderNo : ''}${order.customer ? ' — ' + order.customer : ''}`;
+    // measure the figure pictures first so they sit right on their cups and columns
+    const urls = [ART.cup, ART.eagle, ...order.trophies.flatMap(t => [t.figure, t.trim, t.middle].map(r => (itemInfo(r) || {}).url))];
+    await measure(urls, { timeout: 4000 });
+    box.innerHTML = buildSheetHTML(order, { checklistUrl });
+  } catch (e) {
+    box.innerHTML = `<p class="sheet-msg">${String(e.message).replace(/</g, '&lt;')}</p>`;
+  }
+</script>
+</body>
+</html>

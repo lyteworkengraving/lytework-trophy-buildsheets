@@ -1,0 +1,13 @@
+# Saved orders and shop settings: live only on the server, never in GitHub.
+# The folder's .htaccess lock IS kept, so a fresh install is protected.
+/api/data/*
+!/api/data/.htaccess
+
+# Private settings (the shop passcode)
+api/config.local.php
+
+# Install packages and system junk
+*.zip
+__MACOSX/
+.DS_Store
+Thumbs.db

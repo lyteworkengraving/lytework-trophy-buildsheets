@@ -1,0 +1,7 @@
+# Trophy Build Sheets — make browsers check for updated app files on every visit.
+# (They still reuse a file if it hasn't changed, so this costs almost nothing.)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
